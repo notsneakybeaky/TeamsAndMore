@@ -1,0 +1,16 @@
+name: TeamsAndMore
+version: 1.0.0
+main: main.io.github.itshaithamn.teamsandmore.Main
+api-version: 1.21
+
+commands:
+  tm:
+    description: root command
+    aliases:
+      - teamsandmore
+
+
+permissions:
+  teamsandmore.command.create:
+    description: Creates a team
+    default: true

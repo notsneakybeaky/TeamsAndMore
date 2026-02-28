@@ -1,4 +1,4 @@
-package main.io.github.itshaithamn.teamsandmore;
+package main.io.github.itshaithamn.teamsandmore.commands;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;

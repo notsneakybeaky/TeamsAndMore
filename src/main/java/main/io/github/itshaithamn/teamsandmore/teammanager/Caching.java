@@ -8,6 +8,12 @@ import java.util.concurrent.Executors;
 
 public class Caching {
 
+    private final TeamDatabaseManager dbManager;
+
+    public Caching(TeamDatabaseManager dbManager) {
+        this.dbManager = dbManager;
+    }
+    
     //Implementation
     //An async i/o thread is triggered when a ConcurrentHashmap, named flushMap is flushed to by a ConcurrentHashmap.
     //named bufferMap, when bufferMap reaches n-1 out of n elements. The flushMap can have an unbounded size, where as
@@ -19,13 +25,10 @@ public class Caching {
 
     }
 
-
     private record TMTeams (DBAction dbAction, String teamName, String roleName, int rolePriority, Timestamp dateJoined) {}
     private final ConcurrentHashMap<String, TMTeams> bufferTM = new ConcurrentHashMap<>(10);
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final ConcurrentHashMap<String, TMTeams> flushTM = new ConcurrentHashMap<>();
-    File testDir = new File("build/test-db");
-    private final TeamDatabaseManager dbManager = new TeamDatabaseManager(testDir);
 
     public void cache(DBAction dbAction, String uuid, String teamName, String roleName, int rolePriority, Timestamp dateJoined) {
         TMTeams team = new TMTeams(dbAction, teamName, roleName, rolePriority, dateJoined);

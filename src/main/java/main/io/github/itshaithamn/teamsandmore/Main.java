@@ -1,27 +1,36 @@
 package main.io.github.itshaithamn.teamsandmore;
 
+import main.io.github.itshaithamn.teamsandmore.commands.Commands;
 import main.io.github.itshaithamn.teamsandmore.teammanager.Caching;
+import main.io.github.itshaithamn.teamsandmore.teammanager.TeamDatabaseManager;
+import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scoreboard.Scoreboard;
+
+import java.io.File;
 
 public class Main extends JavaPlugin implements Listener {
-    private static Caching caching;
+    private Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+    private static TeamDatabaseManager dbManager;
+    private static Caching cacheManager;
+    private static TeamManager teamManager;
 
+    //Need to also cache all team names on start up, shouldnt affect the giga wam.
     @Override
     public void onEnable() {
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        this.getCommand("tm").setExecutor(new Commands());
-
-        caching = new Caching();
-    }
-
-    public static Caching getCaching() {
-        return caching;
+        this.getCommand("team").setExecutor(new Commands());
+        dbManager = new TeamDatabaseManager(new File("build/test-db"));
+        cacheManager = new Caching(dbManager);
+        teamManager = new TeamManager(scoreboard, dbManager);
     }
 
     @EventHandler
@@ -29,8 +38,11 @@ public class Main extends JavaPlugin implements Listener {
         event.getPlayer().sendMessage(Component.text("Hello, " + event.getPlayer().getName() + "!"));
     }
 
-
-
+    @EventHandler
+    public void preLogin(PlayerLoginEvent event) {
+        Player player = event.getPlayer();
+        //Do the team logic shit here that I was talking about
+    }
 
 //    @Override
 //    public void onDisable() {

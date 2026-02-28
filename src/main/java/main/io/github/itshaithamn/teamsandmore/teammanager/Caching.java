@@ -55,8 +55,6 @@ public class Caching {
                 switch (entry.getValue().dbAction) {
                     case DBAction.ADDTOTEAM -> dbManager.addToTeam(entry.getKey(), teamName, roleName, rolePriority, dateJoined);
                     case DBAction.REMOVEFROMTEAM -> dbManager.removeFromTeam(entry.getKey());
-//                    TeamDatabaseManager.getTeam();
-//                    case DBAction.GETTEAM -> TeamDatabaseManager.getTeam();
                     default -> iterator.remove();
                 }
             }

@@ -1,6 +1,5 @@
 package main.io.github.itshaithamn.teamsandmore;
 
-import main.io.github.itshaithamn.teamsandmore.commands.Commands;
 import main.io.github.itshaithamn.teamsandmore.teammanager.Caching;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -31,7 +30,8 @@ public class Main extends JavaPlugin implements Listener {
     }
 
 
-    //AI psuedocode that helps me understand how to flush my cache before the server shutsdown.
+
+
 //    @Override
 //    public void onDisable() {
 //        getLogger().info("Server shutting down! Forcing final database flush...");

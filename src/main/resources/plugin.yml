@@ -4,7 +4,7 @@ main: main.io.github.itshaithamn.teamsandmore.Main
 api-version: 1.21
 
 commands:
-  tm:
+  team:
     description: root command
     aliases:
       - teamsandmore

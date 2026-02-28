@@ -19,6 +19,7 @@ public class Caching {
     //named bufferMap, when bufferMap reaches n-1 out of n elements. The flushMap can have an unbounded size, where as
     //bufferMap has a bounded size of 10.
     public enum DBAction {
+        CREATETEAM,
         ADDTOTEAM,
         REMOVEFROMTEAM,
         GETTEAM,

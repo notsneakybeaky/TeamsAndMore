@@ -123,17 +123,16 @@ public class TeamDatabaseManager {
     }
 
     /// Queries the teams table
-    public void createTeam(String teamName, String description, String wayPointLocation) {
+    public void createTeam(String teamName, String wayPointLocation) {
         String sql =
-                "INSERT OR IGNORE INTO teams (team_name, description, way_point_location)"
-                        +" VALUES (?, ?, ?)";
+                "INSERT OR IGNORE INTO teams (team_name, way_point_location)"
+                        +" VALUES (?, ?)";
         try (
                 Connection conn = source.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql);
         ) {
             stmt.setString(1, teamName);
-            stmt.setString(2, description);
-            stmt.setString(3, wayPointLocation);
+            stmt.setString(2, wayPointLocation);
 
             stmt.executeUpdate();
         } catch (SQLException e){
@@ -159,9 +158,5 @@ public class TeamDatabaseManager {
         }
 
         return names;
-    }
-
-    public HikariDataSource getSource() {
-        return this.source;
     }
 }

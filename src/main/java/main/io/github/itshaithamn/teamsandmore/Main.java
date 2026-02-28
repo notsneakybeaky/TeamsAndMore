@@ -19,7 +19,6 @@ import java.io.File;
 public class Main extends JavaPlugin implements Listener {
     private Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
     private static TeamDatabaseManager dbManager;
-    private static Caching cacheManager;
     private static TeamManager teamManager;
 
     //Need to also cache all team names on start up, shouldnt affect the giga wam.
@@ -29,7 +28,6 @@ public class Main extends JavaPlugin implements Listener {
 
         this.getCommand("team").setExecutor(new Commands());
         dbManager = new TeamDatabaseManager(new File("build/test-db"));
-        cacheManager = new Caching(dbManager);
         teamManager = new TeamManager(scoreboard, dbManager);
     }
 

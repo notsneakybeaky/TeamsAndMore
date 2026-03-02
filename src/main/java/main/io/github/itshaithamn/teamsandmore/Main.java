@@ -26,9 +26,10 @@ public class Main extends JavaPlugin implements Listener {
     public void onEnable() {
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        this.getCommand("team").setExecutor(new Commands());
         dbManager = new TeamDatabaseManager(new File("build/test-db"));
         teamManager = new TeamManager(scoreboard, dbManager);
+        this.getCommand("team").setExecutor(new Commands(teamManager));
+
     }
 
     @EventHandler

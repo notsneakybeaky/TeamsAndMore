@@ -75,10 +75,10 @@ public class TeamManager {
             );
         }
 
-        //Adding the waypoint, which isnt going to be added now....
-//        Location loc = player.getLocation().clone();
-//        Block wpBlock = loc.getBlock();
-//        wpBlock.setType(Material.LODESTONE);
+//        Adding the waypoint, which isnt going to be added now....
+        Location loc = player.getLocation().clone();
+        Block wpBlock = loc.getBlock();
+        wpBlock.setType(Material.LODESTONE);
 
         player.sendMessage("Team '" + teamName + "' created with " + (nearbyPlayers.size() + 1) + " members!");
     }

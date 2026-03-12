@@ -51,21 +51,17 @@ public class Commands implements CommandExecutor {
             return true;
         }
 
-        String teamName = args[1];
-
-        // Scoreboard team names are capped at 16 characters
-        if (teamName.length() > 16) {
+        if (args[1].length() > 16) {
             player.sendMessage(Component.text("§cTeam name must be 16 characters or less."));
             return true;
         }
 
-        if (!teamName.matches("^[a-zA-Z0-9_]+$")) {
+        if (!args[1].matches("^[a-zA-Z0-9_]+$")) {
             player.sendMessage(Component.text("§cTeam name can only contain letters, numbers, and underscores."));
             return true;
         }
 
-        // TeamManager handles all success/failure messaging internally
-        teamManager.createNewTeam(player, teamName);
+        teamManager.createNewTeam(player, args[1]);
         return true;
     }
 }

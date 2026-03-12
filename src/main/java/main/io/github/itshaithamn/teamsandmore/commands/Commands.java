@@ -2,6 +2,7 @@ package main.io.github.itshaithamn.teamsandmore.commands;
 
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,11 +33,13 @@ public class Commands implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "create" -> {
-                return handleCreate(player, args);
+                return handleTeamCreate(player, args);
             }
-            case "test" -> {
-                player.sendMessage(Component.text("Test command executed!"));
-                return true;
+            case "invite" -> {
+                return handleTeamInvite(player, args);
+            }
+            case "kick", "remove" -> {
+                return handleTeamRemove(player, args);
             }
             default -> {
                 player.sendMessage(Component.text("§c§lDNE"));
@@ -45,7 +48,7 @@ public class Commands implements CommandExecutor {
         }
     }
 
-    private boolean handleCreate(Player player, String[] args) {
+    private boolean handleTeamCreate(Player player, String[] args) {
         if (args.length < 2) {
             player.sendMessage(Component.text("§cUsage: /team create <name>"));
             return true;
@@ -62,6 +65,66 @@ public class Commands implements CommandExecutor {
         }
 
         teamManager.createNewTeam(player, args[1]);
+        return true;
+    }
+
+    private boolean handleTeamInvite(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§cUsage: /team invite <player name>"));
+            return true;
+        }
+
+        // Permission check (LuckPerms/Bukkit node)
+        if (!player.hasPermission("teamsandmore.invite") &&
+                !player.hasPermission("teamsandmore.admin")) {
+            player.sendMessage(Component.text("§cYou don't have permission to invite players."));
+            return true;
+        }
+
+        String targetName = args[1];
+
+        if (targetName.equalsIgnoreCase(player.getName())) {
+            player.sendMessage(Component.text("§cYou can't invite yourself."));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null) {
+            player.sendMessage(Component.text("§cPlayer not found or offline."));
+            return true;
+        }
+
+        teamManager.addPlayerToTeam(player, target.getName());
+        return true;
+    }
+
+    private boolean handleTeamRemove(Player player, String[] args) {
+        // Permission check
+//        if (!player.hasPermission("teamsandmore.kick") &&
+//                !player.hasPermission("teamsandmore.admin")) {
+//            player.sendMessage(Component.text("§cYou don't have permission to remove players."));
+//            return true;
+//        }
+
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§cUsage: /team kick <player name>"));
+            return true;
+        }
+
+        String targetName = args[1];
+
+        if (targetName.equalsIgnoreCase(player.getName())) {
+            player.sendMessage(Component.text("§cUse a leave command to remove yourself."));
+            return true;
+        }
+
+        Player target = Bukkit.getPlayerExact(targetName);
+        if (target == null) {
+            player.sendMessage(Component.text("§cPlayer not found or offline."));
+            return true;
+        }
+
+        teamManager.removePlayerFromTeam(player, target.getName());
         return true;
     }
 }

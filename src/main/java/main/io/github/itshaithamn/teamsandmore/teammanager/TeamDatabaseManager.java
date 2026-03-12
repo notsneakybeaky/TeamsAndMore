@@ -100,6 +100,7 @@ public class TeamDatabaseManager {
     }
 
     /// Queries the allPlayers table
+    /// Probably dont need this, it's unused.
     public String getTeamOfPlayer(Player player) {
         String sql = "SELECT team_name FROM players WHERE uuid = ?";
 
@@ -141,6 +142,8 @@ public class TeamDatabaseManager {
     }
 
     /// Queries the teams table
+    /// Required to register the teams on game launch so that players can be added to them as they
+    /// join
     public List<String> getAllTeams() {
         String sql = "SELECT team_name FROM teams";
         List<String> names = new ArrayList<>();

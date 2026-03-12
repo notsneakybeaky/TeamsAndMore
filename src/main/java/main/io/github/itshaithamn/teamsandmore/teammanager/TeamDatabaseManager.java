@@ -162,4 +162,20 @@ public class TeamDatabaseManager {
 
         return names;
     }
+
+    public int getRolePriority(String uuid){
+        String sql = "SELECT role_priority FROM players WHERE uuid = ?";
+
+        try {
+            Connection conn = source.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, uuid);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getInt("role_priority");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return -1;
+    }
 }

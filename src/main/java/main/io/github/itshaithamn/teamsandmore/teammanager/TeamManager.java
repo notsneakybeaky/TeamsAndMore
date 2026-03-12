@@ -17,34 +17,24 @@ public class TeamManager {
     public TeamManager(Scoreboard scoreboard, TeamDatabaseManager dbManager) {
         this.scoreboard = scoreboard;
         this.caching = new Caching(dbManager);
+        //Need to figure this out on enable.
 //        loadTeamsFromDatabase();
     }
 
-
-    //Need to do this on enable
-//    public void loadTeamsFromDatabase() {
-//        List<String> allTeams = dbManager.getAllTeams();
-//
-//        for (String team: allTeams) {
-//            scoreboard.registerNewTeam(team);
-//        }
-//    }
-
     public void createNewTeam(Player player, String teamName) {
-        // 1) Validate nearby players
+        // Need a team check here.
+
         Set<Player> nearbyPlayers = findClosestPlayers(player);
         if (nearbyPlayers.size() < 4) {
             player.sendMessage("You need at least 4 players within a 25 block radius to create a team.");
             return;
         }
 
-        // 2) Prevent duplicate team names on scoreboard
         if (scoreboard.getTeam(teamName) != null) {
             player.sendMessage("A team with that name already exists.");
             return;
         }
 
-        // 3) Register scoreboard team first (game-state)
         Team team;
         try {
             team = scoreboard.registerNewTeam(teamName);
@@ -166,4 +156,6 @@ public class TeamManager {
         player.sendMessage("Removed " + target.getName() + " from team " + inviterTeam.getName() + ".");
         target.sendMessage("You were removed from team " + inviterTeam.getName() + ".");
     }
+
+
 }

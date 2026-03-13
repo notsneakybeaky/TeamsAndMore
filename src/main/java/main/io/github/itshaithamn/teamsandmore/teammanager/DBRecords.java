@@ -1,6 +1,13 @@
 package main.io.github.itshaithamn.teamsandmore.teammanager;
 
+import main.io.github.itshaithamn.teamsandmore.Main;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.sql.Timestamp;
+import java.util.concurrent.CompletableFuture;
 
 public interface DBRecords {
     void apply(TeamDatabaseManager db);
@@ -28,10 +35,28 @@ public interface DBRecords {
     }
 
     record rolePriorityPlayer(String uuid) implements DBRecords {
-        //Bruh what :sob:
         @Override
         public void apply(TeamDatabaseManager db) {
-            db
+            JavaPlugin plugin = JavaPlugin.getProvidingPlugin(Main.class);
+
+            CompletableFuture.supplyAsync(() -> db.getRolePriority(uuid)).handleAsync((priority, exception) -> {
+                Player player = Bukkit.getPlayer(uuid);
+
+                if (exception != null) {
+                    player.sendMessage(Component.text("Error: " + exception.getMessage()));
+                    return null;
+                }
+
+                if (player == null) {
+                    return null;
+                }
+
+                if(priority == null) {
+                    return null;
+                }
+
+                return priority;
+            }, Bukkit.getScheduler().getMainThreadExecutor(plugin));
         }
     }
 }

@@ -8,6 +8,7 @@ import org.bukkit.scoreboard.Team;
 import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 
 public class TeamManager {
@@ -157,5 +158,14 @@ public class TeamManager {
         target.sendMessage("You were removed from team " + inviterTeam.getName() + ".");
     }
 
+    public void leaveTeam(Player player) {
+        Team team = scoreboard.getEntryTeam(player.getName());
 
+        if (team == null) {
+            player.sendMessage("You are not in a team.");
+            return;
+        }
+
+
+    }
 }

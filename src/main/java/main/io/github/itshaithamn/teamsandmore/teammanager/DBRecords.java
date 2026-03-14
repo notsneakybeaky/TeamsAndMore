@@ -34,6 +34,8 @@ public interface DBRecords {
         }
     }
 
+
+    //Everytime a read is called a flush needs to done in the caching gangy.
     record rolePriorityPlayer(String uuid) implements DBRecords {
         @Override
         public void apply(TeamDatabaseManager db) {

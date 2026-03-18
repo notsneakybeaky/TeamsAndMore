@@ -92,7 +92,10 @@ public class TeamManager {
     }
 
     public void createNewTeam(Player player, String teamName) {
-        // Need a team check here.
+        if (scoreboard.getEntryTeam(player.getName()) != null) {
+            player.sendMessage("§cYou are already in a team.");
+            return;
+        }
 
         Set<Player> nearbyPlayers = findClosestPlayers(player);
         if (!player.hasPermission("teamsandmore.admin") && nearbyPlayers.size() < 4) {
@@ -141,6 +144,7 @@ public class TeamManager {
             wpLoc.getBlock().setType(Material.LODESTONE);
 
             player.sendMessage("Team '" + teamName + "' created with " + (nearbyPlayers.size() + 1) + " members!");
+            caching.flushNow();
 
             // Notify nametag system
             if (nametagManager != null) {
@@ -154,6 +158,7 @@ public class TeamManager {
                     discordSyncManager.onPlayerJoinedTeam(member.getUniqueId(), teamName);
                 }
             }
+
         } catch (Exception e) {
             // rollback scoreboard team if queueing fails
             Team created = scoreboard.getTeam(teamName);
@@ -318,5 +323,47 @@ public class TeamManager {
             team = scoreboard.registerNewTeam(teamName);
         }
         team.addEntry(playerName);
+    }
+
+    public void disbandTeam(Player player) {
+        Team team = scoreboard.getEntryTeam(player.getName());
+
+        if (team == null) {
+            player.sendMessage("You are not in a team.");
+            return;
+        }
+
+        String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
+        if (!"leader".equalsIgnoreCase(roleName)) {
+            player.sendMessage("§cOnly the team leader can disband the team.");
+            return;
+        }
+
+        String teamName = team.getName();
+
+        // Remove every member from DB and notify integrations
+        for (String entry : new HashSet<>(team.getEntries())) {
+            Player member = Bukkit.getPlayerExact(entry);
+
+            caching.cache(new DBRecords.removeFromTeamRecord(
+                    member != null ? member.getUniqueId().toString() : entry));
+
+            if (nametagManager != null) {
+                nametagManager.onPlayerRemovedFromTeam(teamName, entry);
+            }
+
+            if (discordSyncManager != null && member != null) {
+                discordSyncManager.onPlayerLeftTeam(member.getUniqueId(), teamName);
+            }
+
+            if (member != null && !member.equals(player)) {
+                member.sendMessage("§cTeam " + teamName + " has been disbanded.");
+            }
+        }
+
+        team.unregister();
+        caching.flushNow();
+
+        player.sendMessage("§aTeam " + teamName + " has been disbanded.");
     }
 }

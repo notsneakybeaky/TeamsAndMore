@@ -27,7 +27,7 @@ public class Commands implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            player.sendMessage(Component.text("§6§lUsage: /team <create|invite|kick|leave|color>"));
+            player.sendMessage(Component.text("§6§lUsage: /team <create|invite|kick|leave|color|disband>"));
             return true;
         }
 
@@ -47,11 +47,19 @@ public class Commands implements CommandExecutor {
             case "color" -> {
                 return handleTeamColor(player, args);
             }
+            case "disband" -> {
+                return handleTeamDisband(player);
+            }
             default -> {
                 player.sendMessage(Component.text("§c§lDNE"));
                 return true;
             }
         }
+    }
+
+    private boolean handleTeamDisband(Player player) {
+        teamManager.disbandTeam(player);
+        return true;
     }
 
     private boolean handleTeamCreate(Player player, String[] args) {

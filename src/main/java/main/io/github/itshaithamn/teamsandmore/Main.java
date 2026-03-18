@@ -1,5 +1,6 @@
 package main.io.github.itshaithamn.teamsandmore;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import main.io.github.itshaithamn.teamsandmore.commands.Commands;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncListener;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
@@ -9,6 +10,7 @@ import main.io.github.itshaithamn.teamsandmore.teammanager.TeamDatabaseManager;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
@@ -16,16 +18,19 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 
 public class Main extends JavaPlugin implements Listener {
     private static TeamManager teamManager;
     private NametagManager nametagManager;
+    Scoreboard scoreboard;
+
 
     @Override
     public void onEnable() {
-        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+        scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
@@ -77,5 +82,20 @@ public class Main extends JavaPlugin implements Listener {
         }
 
         getLogger().info("TeamsAndMore disabled cleanly.");
+    }
+
+    @EventHandler
+    public void onChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        Team team = scoreboard.getEntryTeam(player.getName());
+
+        if (team == null) return;
+
+        event.renderer((source, sourceDisplayName, message, viewer) ->
+                team.prefix()
+                        .append(sourceDisplayName)
+                        .append(Component.text(": "))
+                        .append(message)
+        );
     }
 }

@@ -17,6 +17,10 @@ public class Caching {
         this.dbManager = dbManager;
     }
 
+    public TeamDatabaseManager getDbManager() {
+        return dbManager;
+    }
+
     public void cache(DBRecords dbRecords) {
         bufferQueue.add(dbRecords);
 

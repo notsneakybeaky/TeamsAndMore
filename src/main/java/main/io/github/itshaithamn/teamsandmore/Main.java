@@ -1,14 +1,17 @@
 package main.io.github.itshaithamn.teamsandmore;
 
 import main.io.github.itshaithamn.teamsandmore.commands.Commands;
-import main.io.github.itshaithamn.teamsandmore.teammanager.Caching;
+import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncListener;
+import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
+import main.io.github.itshaithamn.teamsandmore.nametag.NametagListener;
+import main.io.github.itshaithamn.teamsandmore.nametag.NametagManager;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamDatabaseManager;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,18 +20,40 @@ import org.bukkit.scoreboard.Scoreboard;
 import java.io.File;
 
 public class Main extends JavaPlugin implements Listener {
-    private Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-    private static TeamDatabaseManager dbManager;
     private static TeamManager teamManager;
+    private NametagManager nametagManager;
 
-    //Need to also cache all team names on start up, shouldnt affect the giga wam.
     @Override
     public void onEnable() {
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
+
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        dbManager = new TeamDatabaseManager(new File("build/test-db"));
-        teamManager = new TeamManager(scoreboard, dbManager);
+        File dataFolder = getDataFolder();
+        if (!dataFolder.exists()) dataFolder.mkdirs();
+
+        teamManager = new TeamManager(scoreboard, new TeamDatabaseManager(dataFolder));
         this.getCommand("team").setExecutor(new Commands(teamManager));
+
+        // ── Nametag coloring (uses Bukkit Team API, no extra dependencies) ──
+        nametagManager = new NametagManager(scoreboard, getLogger());
+        Bukkit.getPluginManager().registerEvents(new NametagListener(nametagManager), this);
+        teamManager.setNametagManager(nametagManager);
+        Bukkit.getScheduler().runTaskLater(this, () -> nametagManager.refreshAllNametags(), 20L);
+
+        // ── DiscordSRV sync (soft dependency) ──
+        if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {
+            getLogger().info("DiscordSRV found — enabling team role sync.");
+            DiscordSyncManager discordSyncManager = new DiscordSyncManager(this, scoreboard);
+            teamManager.setDiscordSyncManager(discordSyncManager);
+
+            // Register DiscordSRV API listener
+            github.scarsz.discordsrv.DiscordSRV.api.subscribe(
+                    new DiscordSyncListener(discordSyncManager, scoreboard, getLogger())
+            );
+        } else {
+            getLogger().info("DiscordSRV not found — Discord role sync disabled.");
+        }
     }
 
     @EventHandler
@@ -37,27 +62,20 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void preLogin(PlayerLoginEvent event) {
-        Player player = event.getPlayer();
-        //Do the team logic shit here that I was talking about
+    public void preLogin(AsyncPlayerPreLoginEvent event) {
+        teamManager.preloadPlayer(event.getUniqueId(), event.getName());
     }
 
-//    @Override
-//    public void onDisable() {
-//        getLogger().info("Server shutting down! Forcing final database flush...");
-//
-//        // 1. Swap the maps one last time
-//        ConcurrentHashMap<UUID, TeamData> finalFlush = activeCache;
-//
-//        // 2. We DO NOT run this asynchronously here.
-//        // We run it synchronously on the main thread to intentionally hang the server.
-//        flushToDatabase(finalFlush);
-//
-//        getLogger().info("All team data safely secured in SQLite.");
-//
-//        // 3. Now it is safe to close the HikariCP pool
-//        if (source != null) {
-//            source.close();
-//        }
-//    }
+    @Override
+    public void onDisable() {
+        getLogger().info("Shutting down — flushing database cache...");
+
+        if (teamManager != null) {
+            teamManager.caching.flushNow();
+            teamManager.caching.stop();
+            teamManager.caching.getDbManager().close();
+        }
+
+        getLogger().info("TeamsAndMore disabled cleanly.");
+    }
 }

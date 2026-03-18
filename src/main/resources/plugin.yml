@@ -3,6 +3,10 @@ version: 1.0.0
 main: main.io.github.itshaithamn.teamsandmore.Main
 api-version: 1.21
 
+softdepend:
+  - ProtocolLib
+  - DiscordSRV
+
 commands:
   team:
     description: root command
@@ -13,4 +17,7 @@ commands:
 permissions:
   teamsandmore.command.create:
     description: Creates a team
+    default: true
+  teamsandmore.command.leave:
+    description: Leave your current team
     default: true

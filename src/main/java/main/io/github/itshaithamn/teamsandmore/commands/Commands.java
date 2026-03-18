@@ -27,7 +27,7 @@ public class Commands implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            player.sendMessage(Component.text("§6§lUsage: /team <create|test>"));
+            player.sendMessage(Component.text("§6§lUsage: /team <create|invite|kick|leave|color>"));
             return true;
         }
 
@@ -40,6 +40,12 @@ public class Commands implements CommandExecutor {
             }
             case "kick", "remove" -> {
                 return handleTeamRemove(player, args);
+            }
+            case "leave" -> {
+                return handleTeamLeave(player);
+            }
+            case "color" -> {
+                return handleTeamColor(player, args);
             }
             default -> {
                 player.sendMessage(Component.text("§c§lDNE"));
@@ -98,13 +104,22 @@ public class Commands implements CommandExecutor {
         return true;
     }
 
+    private boolean handleTeamLeave(Player player) {
+        teamManager.leaveTeam(player);
+        return true;
+    }
+
+    private boolean handleTeamColor(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§cUsage: /team color <color>"));
+            return true;
+        }
+
+        teamManager.setTeamColor(player, args[1]);
+        return true;
+    }
+
     private boolean handleTeamRemove(Player player, String[] args) {
-        // Permission check
-//        if (!player.hasPermission("teamsandmore.kick") &&
-//                !player.hasPermission("teamsandmore.admin")) {
-//            player.sendMessage(Component.text("§cYou don't have permission to remove players."));
-//            return true;
-//        }
 
         if (args.length < 2) {
             player.sendMessage(Component.text("§cUsage: /team kick <player name>"));

@@ -65,7 +65,7 @@ public class TeamDatabaseManager {
     public void addToTeam(String uuid, String teamName, String roleName, int rolePriority, Timestamp dateJoined) {
         String sql =
                 "INSERT OR IGNORE INTO players (uuid, team_name, role_name, role_priority, date_joined)"
-                +" VALUES (?, ?, ?, ?, ?)";
+                        +" VALUES (?, ?, ?, ?, ?)";
         try (
                 Connection conn = source.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql);
@@ -163,12 +163,53 @@ public class TeamDatabaseManager {
         return names;
     }
 
+    public String getRoleName(String uuid) {
+        String sql = "SELECT role_name FROM players WHERE uuid = ?";
+
+        try (
+                Connection conn = source.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
+            stmt.setString(1, uuid);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getString("role_name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public String getTeamNameByUUID(String uuid) {
+        String sql = "SELECT team_name FROM players WHERE uuid = ?";
+
+        try (
+                Connection conn = source.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
+            stmt.setString(1, uuid);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getString("team_name");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void close() {
+        if (source != null && !source.isClosed()) {
+            source.close();
+        }
+    }
+
     public int getRolePriority(String uuid){
         String sql = "SELECT role_priority FROM players WHERE uuid = ?";
 
-        try {
-            Connection conn = source.getConnection();
-            PreparedStatement stmt = conn.prepareStatement(sql);
+        try (
+                Connection conn = source.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)
+        ) {
             stmt.setString(1, uuid);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) return rs.getInt("role_priority");

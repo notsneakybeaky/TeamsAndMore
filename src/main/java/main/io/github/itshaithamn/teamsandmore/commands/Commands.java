@@ -80,13 +80,6 @@ public class Commands implements CommandExecutor {
             return true;
         }
 
-        // Permission check (LuckPerms/Bukkit node)
-        if (!player.hasPermission("teamsandmore.invite") &&
-                !player.hasPermission("teamsandmore.admin")) {
-            player.sendMessage(Component.text("§cYou don't have permission to invite players."));
-            return true;
-        }
-
         String targetName = args[1];
 
         if (targetName.equalsIgnoreCase(player.getName())) {

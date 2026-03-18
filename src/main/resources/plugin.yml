@@ -15,9 +15,6 @@ commands:
 
 
 permissions:
-  teamsandmore.command.create:
-    description: Creates a team
-    default: true
-  teamsandmore.command.leave:
-    description: Leave your current team
+  teamsandmore.admin:
+    description: Admin for tests
     default: true

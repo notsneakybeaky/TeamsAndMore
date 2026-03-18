@@ -95,7 +95,7 @@ public class TeamManager {
         // Need a team check here.
 
         Set<Player> nearbyPlayers = findClosestPlayers(player);
-        if (nearbyPlayers.size() < 4) {
+        if (!player.hasPermission("teamsandmore.admin") && nearbyPlayers.size() < 4) {
             player.sendMessage("You need at least 4 players within a 25 block radius to create a team.");
             return;
         }
@@ -200,6 +200,12 @@ public class TeamManager {
         try {
             Timestamp now = new Timestamp(System.currentTimeMillis());
 
+            String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
+            if (!"leader".equalsIgnoreCase(roleName)) {
+                player.sendMessage("§cOnly the team leader can invite players.");
+                return;
+            }
+
             Player target = Bukkit.getPlayerExact(targetPlayerName);
             caching.cache(new DBRecords.addToTeamRecord(
                     target != null ? target.getUniqueId().toString() : targetPlayerName,
@@ -240,6 +246,12 @@ public class TeamManager {
 
         if (target.getUniqueId().equals(player.getUniqueId())) {
             player.sendMessage("Use a leave command to remove yourself.");
+            return;
+        }
+
+        String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
+        if (!"leader".equalsIgnoreCase(roleName)) {
+            player.sendMessage("Only the team leader can remove players.");
             return;
         }
 

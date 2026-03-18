@@ -171,7 +171,9 @@ public class TeamManager {
     private Set<Player> findClosestPlayers(Player centerPlayer) {
         Set<Player> closestPlayers = new HashSet<>();
 
-        Bukkit.getOnlinePlayers().stream()
+        centerPlayer.getNearbyEntities(25, 25, 25).stream()
+                .filter(e -> e instanceof Player)
+                .map(e -> (Player) e)
                 .filter(p -> !p.equals(centerPlayer))
                 .filter(p -> p.getWorld().equals(centerPlayer.getWorld()))
                 .filter(p -> p.getLocation().distance(centerPlayer.getLocation()) <= 25)

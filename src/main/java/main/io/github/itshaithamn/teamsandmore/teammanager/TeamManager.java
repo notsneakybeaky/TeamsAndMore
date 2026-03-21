@@ -91,21 +91,21 @@ public class TeamManager {
         team.addEntry(player.getName());
     }
 
-    public void createNewTeam(Player player, String teamName) {
+    public boolean createNewTeam(Player player, String teamName) {
         if (scoreboard.getEntryTeam(player.getName()) != null) {
             player.sendMessage("§cYou are already in a team.");
-            return;
+            return false;
         }
 
         Set<Player> nearbyPlayers = findClosestPlayers(player);
         if (!player.hasPermission("teamsandmore.admin") && nearbyPlayers.size() < 4) {
             player.sendMessage("You need at least 4 players within a 25 block radius to create a team.");
-            return;
+            return false;
         }
 
         if (scoreboard.getTeam(teamName) != null) {
             player.sendMessage("A team with that name already exists.");
-            return;
+            return false;
         }
 
         Team team;
@@ -113,7 +113,7 @@ public class TeamManager {
             team = scoreboard.registerNewTeam(teamName);
         } catch (IllegalArgumentException ex) {
             player.sendMessage("Failed to create team: invalid or duplicate team name.");
-            return;
+            return false;
         }
 
         team.addEntry(player.getName());
@@ -167,6 +167,8 @@ public class TeamManager {
             player.sendMessage("Team creation failed. Please try again.");
             e.printStackTrace();
         }
+
+        return true;
     }
 
     private String serializeLocation(Location loc) {

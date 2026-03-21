@@ -2,6 +2,7 @@ package main.io.github.itshaithamn.teamsandmore;
 
 import io.papermc.paper.event.player.AsyncChatEvent;
 import main.io.github.itshaithamn.teamsandmore.commands.Commands;
+import main.io.github.itshaithamn.teamsandmore.commands.TeamTabCompleter;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncListener;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagListener;
@@ -39,7 +40,7 @@ public class Main extends JavaPlugin implements Listener {
 
         teamManager = new TeamManager(scoreboard, new TeamDatabaseManager(dataFolder));
         this.getCommand("team").setExecutor(new Commands(teamManager));
-
+        this.getCommand("team").setTabCompleter(new TeamTabCompleter());
         // ── Nametag coloring (uses Bukkit Team API, no extra dependencies) ──
         nametagManager = new NametagManager(scoreboard, getLogger());
         Bukkit.getPluginManager().registerEvents(new NametagListener(nametagManager), this);

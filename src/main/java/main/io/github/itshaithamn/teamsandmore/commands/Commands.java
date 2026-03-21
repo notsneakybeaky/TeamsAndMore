@@ -9,12 +9,37 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.regex.Pattern;
+
 public class Commands implements CommandExecutor {
 
     private final TeamManager teamManager;
 
+    // Matches slurs with common letter substitutions (0=o, 1=i, 3=e, 4=a, @=a, etc.)
+    // and optional separators (underscores, numbers inserted between letters).
+    private static final Pattern SLUR_PATTERN = Pattern.compile(
+            String.join("|",
+                    "n[i1!|][gq9][gq9]+[e3a@]?[r]?",       // n-word variants
+                    "f[a@4][gq9][gq9]?[o0]?[t7]?",          // f-slur variants
+                    "ch[i1!][n][k]",                          // anti-Asian slur
+                    "r[e3][t7][a@4]r[d]",                     // r-slur (full)
+                    "[t7][a@4]r[d]"                            // r-slur (short form)
+            ),
+            Pattern.CASE_INSENSITIVE
+    );
+
     public Commands(TeamManager teamManager) {
         this.teamManager = teamManager;
+    }
+
+    /**
+     * Checks if a team name contains a slur, accounting for common
+     * leet-speak substitutions and embedded variations.
+     */
+    static boolean containsSlur(String name) {
+        // Strip underscores and common separator chars so "n_i_g" still gets caught
+        String normalized = name.replaceAll("[_\\-.]", "");
+        return SLUR_PATTERN.matcher(normalized).find();
     }
 
     @Override
@@ -75,6 +100,11 @@ public class Commands implements CommandExecutor {
 
         if (!args[1].matches("^[a-zA-Z0-9_]+$")) {
             player.sendMessage(Component.text("§cTeam name can only contain letters, numbers, and underscores."));
+            return true;
+        }
+
+        if (containsSlur(args[1])) {
+            player.sendMessage(Component.text("§cThat team name is not allowed."));
             return true;
         }
 

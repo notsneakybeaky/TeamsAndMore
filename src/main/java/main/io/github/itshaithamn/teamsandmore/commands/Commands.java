@@ -116,7 +116,8 @@ public class Commands implements CommandExecutor {
             return true;
         }
 
-        return teamManager.createNewTeam(player, args[1]);
+        teamManager.createNewTeam(player, args[1]);
+        return true;
     }
 
     private boolean handleTeamInvite(Player player, String[] args) {

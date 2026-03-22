@@ -17,4 +17,4 @@ commands:
 permissions:
   teamsandmore.admin:
     description: Admin for tests
-    default: true
+    default: false

@@ -101,33 +101,33 @@ public class TeamManager {
         team.addEntry(player.getName());
     }
 
-    public boolean createNewTeam(Player player, String teamName) {
+    public void createNewTeam(Player player, String teamName) {
         if (scoreboard.getEntryTeam(player.getName()) != null) {
             player.sendMessage("§cYou are already in a team.");
-            return false;
+            return;
         }
 
         Set<Player> nearbyPlayers = findClosestPlayers(player);
         if (!player.hasPermission("teamsandmore.admin") && nearbyPlayers.size() < 4) {
             player.sendMessage("You need at least 4 players within a 25 block radius to create a team.");
-            return false;
+            return;
         }
 
         if (scoreboard.getTeam(teamName) != null) {
             player.sendMessage("A team with that name already exists.");
-            return false;
+            return;
         }
 
         // Check if the creator already has a pending invite out
         if (pendingCreations.values().stream().anyMatch(p -> p.leader.equals(player.getUniqueId()))) {
             player.sendMessage("§cYou already have a pending team creation. Wait for it to finish or expire.");
-            return false;
+            return;
         }
 
         // Admin bypass — skip invites entirely
         if (player.hasPermission("teamsandmore.admin")) {
             finalizeTeam(player, teamName, nearbyPlayers);
-            return true;
+            return;
         }
 
         // Create the pending creation and send invites
@@ -159,8 +159,6 @@ public class TeamManager {
         }
 
         player.sendMessage("§aTeam invites sent! Waiting for all players to respond (30s timeout)...");
-
-        return true;
     }
 
     /**

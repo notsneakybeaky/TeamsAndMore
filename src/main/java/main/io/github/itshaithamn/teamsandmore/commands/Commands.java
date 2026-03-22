@@ -75,6 +75,14 @@ public class Commands implements CommandExecutor {
             case "disband" -> {
                 return handleTeamDisband(player);
             }
+            case "accept" -> {
+                teamManager.handleInviteResponse(player, true);
+                return true;
+            }
+            case "reject" -> {
+                teamManager.handleInviteResponse(player, false);
+                return true;
+            }
             default -> {
                 player.sendMessage(Component.text("§c§lDNE"));
                 return true;

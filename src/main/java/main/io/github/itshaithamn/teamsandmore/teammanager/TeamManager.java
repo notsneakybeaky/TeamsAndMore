@@ -3,15 +3,17 @@ package main.io.github.itshaithamn.teamsandmore.teammanager;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagColor;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.sql.Timestamp;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -19,9 +21,17 @@ public class TeamManager {
     Scoreboard scoreboard;
     public Caching caching;
 
-    // Optional integrations — null when the dependency is not present
     private NametagManager nametagManager;
     private DiscordSyncManager discordSyncManager;
+
+    // Tracks pending team creations waiting for player responses
+    private final Map<UUID, PendingTeamCreation> pendingCreations = new WeakHashMap<>();
+
+    // Tracks pending single-player invites (from /team invite)
+    private final Map<UUID, PendingInvite> pendingInvites = new WeakHashMap<>();
+
+    /** Timeout in milliseconds before pending invites auto-reject. */
+    private static final long INVITE_TIMEOUT_MS = 30_000;
 
     public TeamManager(Scoreboard scoreboard, TeamDatabaseManager dbManager) {
         this.scoreboard = scoreboard;
@@ -108,42 +118,201 @@ public class TeamManager {
             return false;
         }
 
+        // Check if the creator already has a pending invite out
+        if (pendingCreations.values().stream().anyMatch(p -> p.leader.equals(player.getUniqueId()))) {
+            player.sendMessage("§cYou already have a pending team creation. Wait for it to finish or expire.");
+            return false;
+        }
+
+        // Admin bypass — skip invites entirely
+        if (player.hasPermission("teamsandmore.admin")) {
+            finalizeTeam(player, teamName, nearbyPlayers);
+            return true;
+        }
+
+        // Create the pending creation and send invites
+        PendingTeamCreation pending = new PendingTeamCreation(player.getUniqueId(), teamName, nearbyPlayers);
+        for (Player invited : nearbyPlayers) {
+            pendingCreations.put(invited.getUniqueId(), pending);
+        }
+
+        // Send clickable accept/reject messages
+        Component acceptBtn = Component.text("[ACCEPT]")
+                .color(NamedTextColor.GREEN)
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.runCommand("/team accept"));
+
+        Component rejectBtn = Component.text("[REJECT]")
+                .color(NamedTextColor.RED)
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.runCommand("/team reject"));
+
+        Component inviteMessage = Component.text(player.getName() + " wants you to join team ", NamedTextColor.YELLOW)
+                .append(Component.text(teamName, NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("! ", NamedTextColor.YELLOW))
+                .append(acceptBtn)
+                .append(Component.text(" "))
+                .append(rejectBtn);
+
+        for (Player invited : nearbyPlayers) {
+            invited.sendMessage(inviteMessage);
+        }
+
+        player.sendMessage("§aTeam invites sent! Waiting for all players to respond (30s timeout)...");
+
+        return true;
+    }
+
+    /**
+     * Handles a player accepting or rejecting a pending invite.
+     * Checks both team creation invites and single-player invites.
+     */
+    public void handleInviteResponse(Player player, boolean accepted) {
+        // Check for a single-player invite first
+        PendingInvite invite = pendingInvites.get(player.getUniqueId());
+        if (invite != null) {
+            pendingInvites.remove(player.getUniqueId());
+
+            // Check expiry
+            if (System.currentTimeMillis() - invite.createdAt > INVITE_TIMEOUT_MS) {
+                player.sendMessage("§cThat invite has expired.");
+                Player inviter = Bukkit.getPlayer(invite.inviter);
+                if (inviter != null) {
+                    inviter.sendMessage("§cInvite to " + player.getName() + " expired.");
+                }
+                return;
+            }
+
+            if (accepted) {
+                player.sendMessage("§aYou accepted the invite to team " + invite.teamName + "!");
+                Player inviter = Bukkit.getPlayer(invite.inviter);
+                if (inviter != null) {
+                    inviter.sendMessage("§a" + player.getName() + " accepted the invite!");
+                }
+                finalizeAddPlayer(invite);
+            } else {
+                player.sendMessage("§cYou rejected the invite to team " + invite.teamName + ".");
+                Player inviter = Bukkit.getPlayer(invite.inviter);
+                if (inviter != null) {
+                    inviter.sendMessage("§c" + player.getName() + " rejected the invite.");
+                }
+            }
+            return;
+        }
+
+        // Check for a team creation invite
+        PendingTeamCreation pending = pendingCreations.get(player.getUniqueId());
+        if (pending == null || pending.resolved) {
+            player.sendMessage("§cYou don't have a pending team invite.");
+            return;
+        }
+
+        // Check if the invite has expired
+        if (System.currentTimeMillis() - pending.createdAt > INVITE_TIMEOUT_MS) {
+            cancelPendingCreation(pending, "§cTeam creation timed out — not all players responded in time.");
+            return;
+        }
+
+        if (accepted) {
+            pending.accepted.add(player.getUniqueId());
+            player.sendMessage("§aYou accepted the invite to team " + pending.teamName + ".");
+
+            Player leader = Bukkit.getPlayer(pending.leader);
+            if (leader != null) {
+                leader.sendMessage("§a" + player.getName() + " accepted the invite. ("
+                        + pending.accepted.size() + "/" + pending.invited.size() + ")");
+            }
+
+            // Check if all players have accepted
+            if (pending.accepted.size() == pending.invited.size()) {
+                pending.resolved = true;
+                cleanupPending(pending);
+
+                if (leader != null) {
+                    finalizeTeam(leader, pending.teamName, pending.invited);
+                } else {
+                    cancelPendingCreation(pending, "§cTeam creation failed — the leader went offline.");
+                }
+            }
+        } else {
+            pending.resolved = true;
+            player.sendMessage("§cYou rejected the invite to team " + pending.teamName + ".");
+            cancelPendingCreation(pending, "§c" + player.getName() + " rejected the invite. Team creation cancelled.");
+        }
+    }
+
+    /**
+     * Cancels a pending team creation and notifies the leader and remaining players.
+     */
+    private void cancelPendingCreation(PendingTeamCreation pending, String reason) {
+        pending.resolved = true;
+
+        Player leader = Bukkit.getPlayer(pending.leader);
+        if (leader != null) {
+            leader.sendMessage(reason);
+        }
+
+        for (Player invited : pending.invited) {
+            if (invited.isOnline() && !pending.accepted.contains(invited.getUniqueId())) {
+                invited.sendMessage("§cTeam creation for " + pending.teamName + " has been cancelled.");
+            }
+        }
+
+        cleanupPending(pending);
+    }
+
+    /**
+     * Removes all entries for a pending creation from the tracking map.
+     */
+    private void cleanupPending(PendingTeamCreation pending) {
+        pendingCreations.values().removeIf(p -> p == pending);
+    }
+
+    /**
+     * Actually creates the team on the scoreboard and in the database.
+     * Called after all invited players have accepted (or by admin bypass).
+     */
+    private void finalizeTeam(Player leader, String teamName, Set<Player> members) {
+        // Re-check team name availability (could have been taken during the invite window)
+        if (scoreboard.getTeam(teamName) != null) {
+            leader.sendMessage("§cA team with that name was created while waiting for responses.");
+            return;
+        }
+
         Team team;
         try {
             team = scoreboard.registerNewTeam(teamName);
         } catch (IllegalArgumentException ex) {
-            player.sendMessage("Failed to create team: invalid or duplicate team name.");
-            return false;
+            leader.sendMessage("Failed to create team: invalid or duplicate team name.");
+            return;
         }
 
-        team.addEntry(player.getName());
-        for (Player member : nearbyPlayers) {
+        team.addEntry(leader.getName());
+        for (Player member : members) {
             team.addEntry(member.getName());
         }
 
         Timestamp now = new Timestamp(System.currentTimeMillis());
-
-        // Use block location for waypoint
-        Location wpLoc = player.getLocation().getBlock().getLocation();
-        String waypoint = serializeLocation(wpLoc);
-
+        Location locationBukkit = new Location(leader.getWorld(), leader.getX(), leader.getY(), leader.getZ());
+        String location = locationBukkit.toString();
         try {
-            // 4) Queue DB writes in order (important for FK integrity)
-            caching.cache(new DBRecords.createTeamRecord(teamName, waypoint));
+            caching.cache(new DBRecords.createTeamRecord(teamName, location));
             caching.cache(new DBRecords.addToTeamRecord(
-                    player.getUniqueId().toString(), teamName, "leader", 0, now
+                    leader.getUniqueId().toString(), teamName, "leader", 0, now
             ));
 
-            for (Player member : nearbyPlayers) {
+            for (Player member : members) {
                 caching.cache(new DBRecords.addToTeamRecord(
                         member.getUniqueId().toString(), teamName, "member", 1, now
                 ));
             }
 
-            // 5) Place waypoint block after successful queueing
-            wpLoc.getBlock().setType(Material.LODESTONE);
-
-            player.sendMessage("Team '" + teamName + "' created with " + (nearbyPlayers.size() + 1) + " members!");
+            leader.sendMessage("§aTeam '" + teamName + "' created with " + (members.size() + 1) + " members!");
+            for (Player member : members) {
+                if (member.isOnline()) {
+                    member.sendMessage("§aYou are now a member of team " + teamName + "!");
+                }
+            }
             caching.flushNow();
 
             // Notify nametag system
@@ -153,22 +322,53 @@ public class TeamManager {
 
             // Notify Discord system
             if (discordSyncManager != null) {
-                discordSyncManager.onPlayerJoinedTeam(player.getUniqueId(), teamName);
-                for (Player member : nearbyPlayers) {
+                discordSyncManager.onPlayerJoinedTeam(leader.getUniqueId(), teamName);
+                for (Player member : members) {
                     discordSyncManager.onPlayerJoinedTeam(member.getUniqueId(), teamName);
                 }
             }
 
         } catch (Exception e) {
-            // rollback scoreboard team if queueing fails
             Team created = scoreboard.getTeam(teamName);
             if (created != null) created.unregister();
 
-            player.sendMessage("Team creation failed. Please try again.");
+            leader.sendMessage("Team creation failed. Please try again.");
             e.printStackTrace();
         }
+    }
 
-        return true;
+    /**
+     * Tracks the state of a pending team creation waiting for player responses.
+     */
+    static class PendingTeamCreation {
+        final UUID leader;
+        final String teamName;
+        final Set<Player> invited;
+        final Set<UUID> accepted = new HashSet<>();
+        final long createdAt = System.currentTimeMillis();
+        boolean resolved = false;
+
+        PendingTeamCreation(UUID leader, String teamName, Set<Player> invited) {
+            this.leader = leader;
+            this.teamName = teamName;
+            this.invited = invited;
+        }
+    }
+
+    /**
+     * Tracks a single-player invite to an existing team.
+     */
+    static class PendingInvite {
+        final UUID inviter;
+        final UUID target;
+        final String teamName;
+        final long createdAt = System.currentTimeMillis();
+
+        PendingInvite(UUID inviter, UUID target, String teamName) {
+            this.inviter = inviter;
+            this.target = target;
+            this.teamName = teamName;
+        }
     }
 
     private String serializeLocation(Location loc) {
@@ -195,37 +395,84 @@ public class TeamManager {
     }
 
     public void addPlayerToTeam(Player player, String targetPlayerName) {
-        // Need to add permissions check here.
-
         Team team = scoreboard.getEntryTeam(player.getName());
         if (team == null) {
             player.sendMessage("You are not in a team.");
             return;
         }
 
-        team.addEntry(targetPlayerName);
+        String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
+        if (!"leader".equalsIgnoreCase(roleName)) {
+            player.sendMessage("§cOnly the team leader can invite players.");
+            return;
+        }
+
+        Player target = Bukkit.getPlayerExact(targetPlayerName);
+        if (target == null) {
+            player.sendMessage("§cPlayer not found or offline.");
+            return;
+        }
+
+        if (scoreboard.getEntryTeam(target.getName()) != null) {
+            player.sendMessage("§c" + target.getName() + " is already in a team.");
+            return;
+        }
+
+        if (pendingInvites.containsKey(target.getUniqueId())) {
+            player.sendMessage("§c" + target.getName() + " already has a pending invite.");
+            return;
+        }
+
+        // Store the pending invite
+        PendingInvite invite = new PendingInvite(player.getUniqueId(), target.getUniqueId(), team.getName());
+        pendingInvites.put(target.getUniqueId(), invite);
+
+        // Send clickable accept/reject message to the target
+        Component acceptBtn = Component.text("[ACCEPT]")
+                .color(NamedTextColor.GREEN)
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.runCommand("/team accept"));
+
+        Component rejectBtn = Component.text("[REJECT]")
+                .color(NamedTextColor.RED)
+                .decorate(TextDecoration.BOLD)
+                .clickEvent(ClickEvent.runCommand("/team reject"));
+
+        Component inviteMessage = Component.text(player.getName() + " invited you to join team ", NamedTextColor.YELLOW)
+                .append(Component.text(team.getName(), NamedTextColor.GOLD, TextDecoration.BOLD))
+                .append(Component.text("! ", NamedTextColor.YELLOW))
+                .append(acceptBtn)
+                .append(Component.text(" "))
+                .append(rejectBtn);
+
+        target.sendMessage(inviteMessage);
+        player.sendMessage("§aInvite sent to " + target.getName() + "! (30s timeout)");
+    }
+
+    /**
+     * Finalizes adding a single invited player to an existing team.
+     */
+    private void finalizeAddPlayer(PendingInvite invite) {
+        Player target = Bukkit.getPlayer(invite.target);
+        if (target == null) return;
+
+        Team team = scoreboard.getTeam(invite.teamName);
+        if (team == null) return;
+
+        team.addEntry(target.getName());
         try {
             Timestamp now = new Timestamp(System.currentTimeMillis());
-
-            String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
-            if (!"leader".equalsIgnoreCase(roleName)) {
-                player.sendMessage("§cOnly the team leader can invite players.");
-                return;
-            }
-
-            Player target = Bukkit.getPlayerExact(targetPlayerName);
             caching.cache(new DBRecords.addToTeamRecord(
-                    target != null ? target.getUniqueId().toString() : targetPlayerName,
-                    team.getName(), "member", 1, now));
+                    target.getUniqueId().toString(), invite.teamName, "member", 1, now));
 
             // Notify nametag system
             if (nametagManager != null) {
-                nametagManager.onPlayerAddedToTeam(team.getName(), targetPlayerName);
+                nametagManager.onPlayerAddedToTeam(invite.teamName, target.getName());
             }
 
             // Notify Discord system
-            if (discordSyncManager != null && target != null) {
-                discordSyncManager.onPlayerJoinedTeam(target.getUniqueId(), team.getName());
+            if (discordSyncManager != null) {
+                discordSyncManager.onPlayerJoinedTeam(target.getUniqueId(), invite.teamName);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

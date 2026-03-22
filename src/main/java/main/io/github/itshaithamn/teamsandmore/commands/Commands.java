@@ -1,5 +1,6 @@
 package main.io.github.itshaithamn.teamsandmore.commands;
 
+import main.io.github.itshaithamn.teamsandmore.gui.TeamViewGui;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -81,6 +82,10 @@ public class Commands implements CommandExecutor {
             }
             case "reject" -> {
                 teamManager.handleInviteResponse(player, false);
+                return true;
+            }
+            case "view" -> {
+                .openGui(player, "invalid for now");
                 return true;
             }
             default -> {

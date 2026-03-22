@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class TeamTabCompleter implements TabCompleter {
 
     private static final List<String> SUBCOMMANDS =
-            List.of("create", "invite", "kick", "remove", "leave", "color", "disband");
+            List.of("create", "invite", "kick", "remove", "leave", "color", "disband", "view", "accept", "reject");
 
     private static final List<String> COLOR_NAMES =
             Arrays.stream(NametagColor.values())

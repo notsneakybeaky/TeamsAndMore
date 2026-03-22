@@ -5,6 +5,7 @@ import main.io.github.itshaithamn.teamsandmore.commands.Commands;
 import main.io.github.itshaithamn.teamsandmore.commands.TeamTabCompleter;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncListener;
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
+import main.io.github.itshaithamn.teamsandmore.gui.bannerui.BannerEditorManager;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagListener;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagManager;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamDatabaseManager;
@@ -17,6 +18,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -98,5 +100,10 @@ public class Main extends JavaPlugin implements Listener {
                         .append(Component.text(": "))
                         .append(message)
         );
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        BannerEditorManager.cleanup(event.getPlayer());
     }
 }

@@ -52,13 +52,13 @@ public class TeamManager {
     public void setTeamColor(Player player, String colorName) {
         Team team = scoreboard.getEntryTeam(player.getName());
         if (team == null) {
-            player.sendMessage("You are not in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are not in a team.");
             return;
         }
 
         String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
         if (!"leader".equalsIgnoreCase(roleName)) {
-            player.sendMessage("§cOnly the team leader can change the team color.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Only the team leader can change the team color.");
             return;
         }
 
@@ -66,7 +66,7 @@ public class TeamManager {
         try {
             color = NametagColor.valueOf(colorName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            player.sendMessage("§cInvalid color. Options: " + String.join(", ",
+            player.sendMessage("§6§l[TeamsAndMore]§r Invalid color. Options: " + String.join(", ",
                     java.util.Arrays.stream(NametagColor.values())
                             .map(c -> c.name().toLowerCase())
                             .toArray(String[]::new)));
@@ -74,13 +74,13 @@ public class TeamManager {
         }
 
         if (nametagManager == null) {
-            player.sendMessage("§cNametag coloring is not available (ProtocolLib not installed).");
+            player.sendMessage("§6§l[TeamsAndMore]§r Nametag coloring is not available (ProtocolLib not installed).");
             return;
         }
 
         nametagManager.assignTeamColor(team.getName(), color);
         nametagManager.refreshAllNametags();
-        player.sendMessage("§aTeam color set to " + color.getChatColor() + colorName.toLowerCase() + "§a.");
+        player.sendMessage("§6§l[TeamsAndMore]§r Team color set to " + color.getChatColor() + colorName.toLowerCase() + "§a.");
     }
 
     /**
@@ -103,24 +103,24 @@ public class TeamManager {
 
     public void createNewTeam(Player player, String teamName) {
         if (scoreboard.getEntryTeam(player.getName()) != null) {
-            player.sendMessage("§cYou are already in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are already in a team.");
             return;
         }
 
         Set<Player> nearbyPlayers = findClosestPlayers(player);
         if (!player.hasPermission("teamsandmore.admin") && nearbyPlayers.size() < 4) {
-            player.sendMessage("You need at least 4 players within a 25 block radius to create a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You need at least 4 players within a 25 block radius to create a team.");
             return;
         }
 
         if (scoreboard.getTeam(teamName) != null) {
-            player.sendMessage("A team with that name already exists.");
+            player.sendMessage("§6§l[TeamsAndMore]§r A team with that name already exists.");
             return;
         }
 
         // Check if the creator already has a pending invite out
         if (pendingCreations.values().stream().anyMatch(p -> p.leader.equals(player.getUniqueId()))) {
-            player.sendMessage("§cYou already have a pending team creation. Wait for it to finish or expire.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You already have a pending team creation. Wait for it to finish or expire.");
             return;
         }
 
@@ -158,7 +158,7 @@ public class TeamManager {
             invited.sendMessage(inviteMessage);
         }
 
-        player.sendMessage("§aTeam invites sent! Waiting for all players to respond (30s timeout)...");
+        player.sendMessage("§6§l[TeamsAndMore]§r Team invites sent! Waiting for all players to respond (30s timeout)...");
     }
 
     /**
@@ -173,23 +173,23 @@ public class TeamManager {
 
             // Check expiry
             if (System.currentTimeMillis() - invite.createdAt > INVITE_TIMEOUT_MS) {
-                player.sendMessage("§cThat invite has expired.");
+                player.sendMessage("§6§l[TeamsAndMore]§r That invite has expired.");
                 Player inviter = Bukkit.getPlayer(invite.inviter);
                 if (inviter != null) {
-                    inviter.sendMessage("§cInvite to " + player.getName() + " expired.");
+                    inviter.sendMessage("§6§l[TeamsAndMore]§r Invite to " + player.getName() + " expired.");
                 }
                 return;
             }
 
             if (accepted) {
-                player.sendMessage("§aYou accepted the invite to team " + invite.teamName + "!");
+                player.sendMessage("§6§l[TeamsAndMore]§r You accepted the invite to team " + invite.teamName + "!");
                 Player inviter = Bukkit.getPlayer(invite.inviter);
                 if (inviter != null) {
                     inviter.sendMessage("§a" + player.getName() + " accepted the invite!");
                 }
                 finalizeAddPlayer(invite);
             } else {
-                player.sendMessage("§cYou rejected the invite to team " + invite.teamName + ".");
+                player.sendMessage("§6§l[TeamsAndMore]§r You rejected the invite to team " + invite.teamName + ".");
                 Player inviter = Bukkit.getPlayer(invite.inviter);
                 if (inviter != null) {
                     inviter.sendMessage("§c" + player.getName() + " rejected the invite.");
@@ -201,7 +201,7 @@ public class TeamManager {
         // Check for a team creation invite
         PendingTeamCreation pending = pendingCreations.get(player.getUniqueId());
         if (pending == null || pending.resolved) {
-            player.sendMessage("§cYou don't have a pending team invite.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You don't have a pending team invite.");
             return;
         }
 
@@ -213,11 +213,11 @@ public class TeamManager {
 
         if (accepted) {
             pending.accepted.add(player.getUniqueId());
-            player.sendMessage("§aYou accepted the invite to team " + pending.teamName + ".");
+            player.sendMessage("§6§l[TeamsAndMore]§r You accepted the invite to team " + pending.teamName + ".");
 
             Player leader = Bukkit.getPlayer(pending.leader);
             if (leader != null) {
-                leader.sendMessage("§a" + player.getName() + " accepted the invite. ("
+                leader.sendMessage("§6§l[TeamsAndMore]§r " + player.getName() + " accepted the invite. ("
                         + pending.accepted.size() + "/" + pending.invited.size() + ")");
             }
 
@@ -229,12 +229,12 @@ public class TeamManager {
                 if (leader != null) {
                     finalizeTeam(leader, pending.teamName, pending.invited);
                 } else {
-                    cancelPendingCreation(pending, "§cTeam creation failed — the leader went offline.");
+                    cancelPendingCreation(pending, "§6§l[TeamsAndMore]§r Team creation failed — the leader went offline.");
                 }
             }
         } else {
             pending.resolved = true;
-            player.sendMessage("§cYou rejected the invite to team " + pending.teamName + ".");
+            player.sendMessage("§6§l[TeamsAndMore]§r You rejected the invite to team " + pending.teamName + ".");
             cancelPendingCreation(pending, "§c" + player.getName() + " rejected the invite. Team creation cancelled.");
         }
     }
@@ -252,7 +252,7 @@ public class TeamManager {
 
         for (Player invited : pending.invited) {
             if (invited.isOnline() && !pending.accepted.contains(invited.getUniqueId())) {
-                invited.sendMessage("§cTeam creation for " + pending.teamName + " has been cancelled.");
+                invited.sendMessage("§6§l[TeamsAndMore]§r Team creation for " + pending.teamName + " has been cancelled.");
             }
         }
 
@@ -273,7 +273,7 @@ public class TeamManager {
     private void finalizeTeam(Player leader, String teamName, Set<Player> members) {
         // Re-check team name availability (could have been taken during the invite window)
         if (scoreboard.getTeam(teamName) != null) {
-            leader.sendMessage("§cA team with that name was created while waiting for responses.");
+            leader.sendMessage("§6§l[TeamsAndMore]§r A team with that name was created while waiting for responses.");
             return;
         }
 
@@ -281,7 +281,7 @@ public class TeamManager {
         try {
             team = scoreboard.registerNewTeam(teamName);
         } catch (IllegalArgumentException ex) {
-            leader.sendMessage("Failed to create team: invalid or duplicate team name.");
+            leader.sendMessage("§6§l[TeamsAndMore]§r Failed to create team: invalid or duplicate team name.");
             return;
         }
 
@@ -305,10 +305,10 @@ public class TeamManager {
                 ));
             }
 
-            leader.sendMessage("§aTeam '" + teamName + "' created with " + (members.size() + 1) + " members!");
+            leader.sendMessage("§6§l[TeamsAndMore]§r Team '" + teamName + "' created with " + (members.size() + 1) + " members!");
             for (Player member : members) {
                 if (member.isOnline()) {
-                    member.sendMessage("§aYou are now a member of team " + teamName + "!");
+                    member.sendMessage("§6§l[TeamsAndMore]§r You are now a member of team " + teamName + "!");
                 }
             }
             caching.flushNow();
@@ -330,7 +330,7 @@ public class TeamManager {
             Team created = scoreboard.getTeam(teamName);
             if (created != null) created.unregister();
 
-            leader.sendMessage("Team creation failed. Please try again.");
+            leader.sendMessage("§6§l[TeamsAndMore]§r Team creation failed. Please try again.");
             e.printStackTrace();
         }
     }
@@ -395,29 +395,29 @@ public class TeamManager {
     public void addPlayerToTeam(Player player, String targetPlayerName) {
         Team team = scoreboard.getEntryTeam(player.getName());
         if (team == null) {
-            player.sendMessage("You are not in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are not in a team.");
             return;
         }
 
         String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
         if (!"leader".equalsIgnoreCase(roleName)) {
-            player.sendMessage("§cOnly the team leader can invite players.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Only the team leader can invite players.");
             return;
         }
 
         Player target = Bukkit.getPlayerExact(targetPlayerName);
         if (target == null) {
-            player.sendMessage("§cPlayer not found or offline.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Player not found or offline.");
             return;
         }
 
         if (scoreboard.getEntryTeam(target.getName()) != null) {
-            player.sendMessage("§c" + target.getName() + " is already in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r " + target.getName() + " is already in a team.");
             return;
         }
 
         if (pendingInvites.containsKey(target.getUniqueId())) {
-            player.sendMessage("§c" + target.getName() + " already has a pending invite.");
+            player.sendMessage("§6§l[TeamsAndMore]§r " + target.getName() + " already has a pending invite.");
             return;
         }
 
@@ -436,7 +436,7 @@ public class TeamManager {
                 .decorate(TextDecoration.BOLD)
                 .clickEvent(ClickEvent.runCommand("/team reject"));
 
-        Component inviteMessage = Component.text(player.getName() + " invited you to join team ", NamedTextColor.YELLOW)
+        Component inviteMessage = Component.text("§6§l[TeamsAndMore]§r " + player.getName() + " invited you to join team ", NamedTextColor.YELLOW)
                 .append(Component.text(team.getName(), NamedTextColor.GOLD, TextDecoration.BOLD))
                 .append(Component.text("! ", NamedTextColor.YELLOW))
                 .append(acceptBtn)
@@ -444,7 +444,7 @@ public class TeamManager {
                 .append(rejectBtn);
 
         target.sendMessage(inviteMessage);
-        player.sendMessage("§aInvite sent to " + target.getName() + "! (30s timeout)");
+        player.sendMessage("§6§l[TeamsAndMore]§r Invite sent to " + target.getName() + "! (30s timeout)");
     }
 
     /**
@@ -478,45 +478,39 @@ public class TeamManager {
     }
 
     public void removePlayerFromTeam(Player player, String targetPlayerName) {
-//        if (!player.hasPermission("teamsandmore.invite") &&
-//                !player.hasPermission("teamsandmore.admin")) {
-//            player.sendMessage("You don't have permission to remove players.");
-//            return;
-//        }
-
         Team inviterTeam = scoreboard.getEntryTeam(player.getName());
         if (inviterTeam == null) {
-            player.sendMessage("You are not in a team.");
+            player.sendMessage("\n You are not in a team.");
             return;
         }
 
         Player target = Bukkit.getPlayerExact(targetPlayerName);
         if (target == null) {
-            player.sendMessage("That player is not online.");
+            player.sendMessage("§6§l[TeamsAndMore]§r That player is not online.");
             return;
         }
 
         if (target.getUniqueId().equals(player.getUniqueId())) {
-            player.sendMessage("Use a leave command to remove yourself.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Use a leave command to remove yourself.");
             return;
         }
 
         String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
         if (!"leader".equalsIgnoreCase(roleName)) {
-            player.sendMessage("Only the team leader can remove players.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Only the team leader can remove players.");
             return;
         }
 
         Team targetTeam = scoreboard.getEntryTeam(target.getName());
         if (targetTeam == null || !targetTeam.getName().equals(inviterTeam.getName())) {
-            player.sendMessage(target.getName() + " is not in your team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r " + target.getName() + " is not in your team.");
             return;
         }
 
         inviterTeam.removeEntry(target.getName());
         caching.cache(new DBRecords.removeFromTeamRecord(target.getUniqueId().toString()));
-        player.sendMessage("Removed " + target.getName() + " from team " + inviterTeam.getName() + ".");
-        target.sendMessage("You were removed from team " + inviterTeam.getName() + ".");
+        player.sendMessage("§6§l[TeamsAndMore]§r Removed " + target.getName() + " from team " + inviterTeam.getName() + ".");
+        target.sendMessage("§6§l[TeamsAndMore]§r You were removed from team " + inviterTeam.getName() + ".");
 
         // Notify nametag system
         if (nametagManager != null) {
@@ -533,20 +527,20 @@ public class TeamManager {
         Team team = scoreboard.getEntryTeam(player.getName());
 
         if (team == null) {
-            player.sendMessage("You are not in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are not in a team.");
             return;
         }
 
         String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
         if ("leader".equalsIgnoreCase(roleName)) {
-            player.sendMessage("§cYou are the team leader. Transfer leadership or disband the team before leaving.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are the team leader. Transfer leadership or disband the team before leaving.");
             return;
         }
 
         String teamName = team.getName();
         team.removeEntry(player.getName());
         caching.cache(new DBRecords.removeFromTeamRecord(player.getUniqueId().toString()));
-        player.sendMessage("You have left team " + teamName + ".");
+        player.sendMessage("§6§l[TeamsAndMore]§r You have left team " + teamName + ".");
 
         // Notify nametag system
         if (nametagManager != null) {
@@ -576,13 +570,13 @@ public class TeamManager {
         Team team = scoreboard.getEntryTeam(player.getName());
 
         if (team == null) {
-            player.sendMessage("You are not in a team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r You are not in a team.");
             return;
         }
 
         String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
         if (!"leader".equalsIgnoreCase(roleName)) {
-            player.sendMessage("§cOnly the team leader can disband the team.");
+            player.sendMessage("§6§l[TeamsAndMore]§r Only the team leader can disband the team.");
             return;
         }
 
@@ -604,13 +598,13 @@ public class TeamManager {
             }
 
             if (member != null && !member.equals(player)) {
-                member.sendMessage("§cTeam " + teamName + " has been disbanded.");
+                member.sendMessage("§6§l[TeamsAndMore]§r Team " + teamName + " has been disbanded.");
             }
         }
 
         team.unregister();
         caching.flushNow();
 
-        player.sendMessage("§aTeam " + teamName + " has been disbanded.");
+        player.sendMessage("§6§l[TeamsAndMore]§r Team " + teamName + " has been disbanded.");
     }
 }

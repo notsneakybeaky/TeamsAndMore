@@ -1,4 +1,4 @@
-package main.io.github.itshaithamn.teamsandmore.gui;
+package main.io.github.itshaithamn.teamsandmore.gui.bannerui;
 
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import dev.triumphteam.gui.guis.Gui;
@@ -173,7 +173,7 @@ public class PatternPage {
                     .asGuiItem(event -> {
                         event.setCancelled(true);
                         if (state.getLayers().size() >= 6) {
-                            player.sendMessage(Component.text("Max 6 layers reached! Remove a layer first.", NamedTextColor.RED));
+                            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Max 6 layers reached! Remove a layer first.", NamedTextColor.RED));
                             return;
                         }
                         state.setPendingPattern(patternType);
@@ -221,10 +221,10 @@ public class PatternPage {
                     // TODO: Replace this with your actual DB write call
                     // Example: YourTeamDatabase.setBanner(teamName, serialized);
                     String teamName = BannerEditorManager.getTeamName(player);
-                    player.sendMessage(Component.text("Banner saved for team: " + teamName, NamedTextColor.GREEN));
+                    player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Banner saved for team: " + teamName, NamedTextColor.GREEN));
 
                     // For debugging — remove this in production
-                    player.sendMessage(Component.text("Serialized (" + serialized.length() + " chars)", NamedTextColor.DARK_GRAY));
+                    player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Serialized (" + serialized.length() + " chars)", NamedTextColor.DARK_GRAY));
                 });
         gui.setItem(6, 4, bannerSetItem);
 

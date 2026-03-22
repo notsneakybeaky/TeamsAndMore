@@ -1,4 +1,4 @@
-package main.io.github.itshaithamn.teamsandmore.gui;
+package main.io.github.itshaithamn.teamsandmore.gui.bannerui;
 
 import org.bukkit.DyeColor;
 import org.bukkit.Material;

@@ -1,4 +1,4 @@
-package main.io.github.itshaithamn.teamsandmore.gui;
+package main.io.github.itshaithamn.teamsandmore.gui.bannerui;
 
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import dev.triumphteam.gui.guis.Gui;
@@ -51,7 +51,7 @@ public class DyeColorPage {
 
                         boolean added = state.addLayer(state.getPendingPattern(), dyeColor);
                         if (!added) {
-                            player.sendMessage(Component.text("Max 6 layers reached!", NamedTextColor.RED));
+                            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Max 6 layers reached!", NamedTextColor.RED));
                         }
 
                         state.setPendingPattern(null);

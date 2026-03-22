@@ -1,6 +1,6 @@
 package main.io.github.itshaithamn.teamsandmore.commands;
 
-import main.io.github.itshaithamn.teamsandmore.gui.TeamViewGui;
+import main.io.github.itshaithamn.teamsandmore.gui.bannerui.BannerEditorManager;
 import main.io.github.itshaithamn.teamsandmore.teammanager.TeamManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -8,6 +8,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scoreboard.Team;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
@@ -48,12 +49,12 @@ public class Commands implements CommandExecutor {
                              @NotNull String s, @NotNull String[] args) {
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("Only players can use this command"));
+            sender.sendMessage(Component.text("§6§l[TeamsAndMore]§r Only players can use this command"));
             return true;
         }
 
         if (args.length == 0) {
-            player.sendMessage(Component.text("§6§lUsage: /team <create|invite|kick|leave|color|disband>"));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team <create|invite|kick|leave|color|disband>"));
             return true;
         }
 
@@ -85,11 +86,16 @@ public class Commands implements CommandExecutor {
                 return true;
             }
             case "view" -> {
-                .openGui(player, "invalid for now");
+                Team teamName = player.getScoreboard().getPlayerTeam(player); // whatever your method is
+                if (teamName == null) {
+                    player.sendMessage(Component.text("§6§l[TeamsAndMore]§r You must be in a team to use this!"));
+                    return true;
+                }
+                BannerEditorManager.open(player, teamName.getName());
                 return true;
             }
             default -> {
-                player.sendMessage(Component.text("§c§lDNE"));
+                player.sendMessage(Component.text("§6§l[TeamsAndMore]§r DNE"));
                 return true;
             }
         }
@@ -102,22 +108,22 @@ public class Commands implements CommandExecutor {
 
     private boolean handleTeamCreate(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(Component.text("§cUsage: /team create <name>"));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team create <name>"));
             return true;
         }
 
         if (args[1].length() > 16) {
-            player.sendMessage(Component.text("§cTeam name must be 16 characters or less."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Team name must be 16 characters or less."));
             return true;
         }
 
         if (!args[1].matches("^[a-zA-Z0-9_]+$")) {
-            player.sendMessage(Component.text("§cTeam name can only contain letters, numbers, and underscores."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Team name can only contain letters, numbers, and underscores."));
             return true;
         }
 
         if (containsSlur(args[1])) {
-            player.sendMessage(Component.text("§cThat team name is not allowed."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r That team name is not allowed."));
             return true;
         }
 
@@ -127,20 +133,20 @@ public class Commands implements CommandExecutor {
 
     private boolean handleTeamInvite(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(Component.text("§cUsage: /team invite <player name>"));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team invite <player name>"));
             return true;
         }
 
         String targetName = args[1];
 
         if (targetName.equalsIgnoreCase(player.getName())) {
-            player.sendMessage(Component.text("§cYou can't invite yourself."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r You can't invite yourself."));
             return true;
         }
 
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
-            player.sendMessage(Component.text("§cPlayer not found or offline."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Player not found or offline."));
             return true;
         }
 
@@ -155,7 +161,7 @@ public class Commands implements CommandExecutor {
 
     private boolean handleTeamColor(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage(Component.text("§cUsage: /team color <color>"));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team color <color>"));
             return true;
         }
 
@@ -166,20 +172,20 @@ public class Commands implements CommandExecutor {
     private boolean handleTeamRemove(Player player, String[] args) {
 
         if (args.length < 2) {
-            player.sendMessage(Component.text("§cUsage: /team kick <player name>"));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team kick <player name>"));
             return true;
         }
 
         String targetName = args[1];
 
         if (targetName.equalsIgnoreCase(player.getName())) {
-            player.sendMessage(Component.text("§cUse a leave command to remove yourself."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Use a leave command to remove yourself."));
             return true;
         }
 
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
-            player.sendMessage(Component.text("§cPlayer not found or offline."));
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Player not found or offline."));
             return true;
         }
 

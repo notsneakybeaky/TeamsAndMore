@@ -1,4 +1,4 @@
-package main.io.github.itshaithamn.teamsandmore.gui;
+package main.io.github.itshaithamn.teamsandmore.gui.bannerui;
 
 import dev.triumphteam.gui.builder.item.ItemBuilder;
 import dev.triumphteam.gui.guis.Gui;

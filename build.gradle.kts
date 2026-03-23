@@ -1,5 +1,5 @@
 group = "io.github.itshaihtamn.teamsandmore"
-version = "1.0.4"
+version = "1.0.5"
 
 plugins {
     id("java")

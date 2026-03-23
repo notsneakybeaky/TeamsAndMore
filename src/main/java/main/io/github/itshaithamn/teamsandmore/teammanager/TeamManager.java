@@ -1,6 +1,7 @@
 package main.io.github.itshaithamn.teamsandmore.teammanager;
 
 import main.io.github.itshaithamn.teamsandmore.discord.DiscordSyncManager;
+import main.io.github.itshaithamn.teamsandmore.nametag.NametagColor;
 import main.io.github.itshaithamn.teamsandmore.nametag.NametagManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -43,6 +44,42 @@ public class TeamManager {
 
     public void setDiscordSyncManager(DiscordSyncManager discordSyncManager) {
         this.discordSyncManager = discordSyncManager;
+    }
+
+    /**
+     * Sets the prefix color for the player's team. Only the team leader can change it.
+     */
+    public void setTeamColor(Player player, String colorName) {
+        Team team = scoreboard.getEntryTeam(player.getName());
+        if (team == null) {
+            player.sendMessage("§6§l[TeamsAndMore]§r You are not in a team.");
+            return;
+        }
+
+        String roleName = caching.getDbManager().getRoleName(player.getUniqueId().toString());
+        if (!"leader".equalsIgnoreCase(roleName)) {
+            player.sendMessage("§6§l[TeamsAndMore]§r Only the team leader can change the team color.");
+            return;
+        }
+
+        NametagColor color;
+        try {
+            color = NametagColor.valueOf(colorName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            player.sendMessage("§6§l[TeamsAndMore]§r Invalid color. Options: " + String.join(", ",
+                    java.util.Arrays.stream(NametagColor.values())
+                            .map(c -> c.name().toLowerCase())
+                            .toArray(String[]::new)));
+            return;
+        }
+
+        if (nametagManager == null) {
+            player.sendMessage("§6§l[TeamsAndMore]§r Nametag system is not available.");
+            return;
+        }
+
+        nametagManager.setTeamColor(team.getName(), color);
+        player.sendMessage("§6§l[TeamsAndMore]§r Team color set to " + color.getChatColor() + colorName.toLowerCase() + "§r§a.");
     }
 
     /**

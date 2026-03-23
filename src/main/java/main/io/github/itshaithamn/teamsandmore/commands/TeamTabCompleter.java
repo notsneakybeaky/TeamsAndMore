@@ -1,5 +1,6 @@
 package main.io.github.itshaithamn.teamsandmore.commands;
 
+import main.io.github.itshaithamn.teamsandmore.nametag.NametagColor;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -9,13 +10,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TeamTabCompleter implements TabCompleter {
 
     private static final List<String> SUBCOMMANDS =
-            List.of("create", "invite", "kick", "remove", "leave", "disband", "view", "accept", "reject");
+            List.of("create", "invite", "kick", "remove", "leave", "color", "disband", "view", "accept", "reject");
+
+    private static final List<String> COLOR_NAMES =
+            Arrays.stream(NametagColor.values())
+                    .map(c -> c.name().toLowerCase())
+                    .collect(Collectors.toList());
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender,
@@ -34,6 +41,7 @@ public class TeamTabCompleter implements TabCompleter {
             String sub = args[0].toLowerCase();
             return switch (sub) {
                 case "invite", "kick", "remove" -> filterStartingWith(getOnlinePlayerNames(sender), args[1]);
+                case "color" -> filterStartingWith(COLOR_NAMES, args[1]);
                 default -> List.of();
             };
         }

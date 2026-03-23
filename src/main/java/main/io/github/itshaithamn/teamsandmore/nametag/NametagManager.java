@@ -7,6 +7,8 @@ import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.cacheddata.CachedMetaData;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.Node;
+import net.luckperms.api.node.NodeType;
 import net.luckperms.api.node.types.InheritanceNode;
 import net.luckperms.api.node.types.PrefixNode;
 import org.bukkit.Bukkit;
@@ -15,6 +17,7 @@ import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 
 public class NametagManager {
@@ -31,26 +34,65 @@ public class NametagManager {
     }
 
     /**
-     * Creates a LuckPerms group for a new team with a colored prefix.
-     * Called when a team is finalized.
+     * Creates a LuckPerms group for a new team with a white prefix.
+     * Format: "&f[TeamName] &r"
      */
-    public void createTeamGroup(String teamName) {
+    public CompletableFuture<Void> createTeamGroup(String teamName) {
+        return createTeamGroup(teamName, NametagColor.WHITE);
+    }
+
+    /**
+     * Creates a LuckPerms group for a new team with the given color.
+     * Format: "<color>[TeamName] &r"
+     */
+    public CompletableFuture<Void> createTeamGroup(String teamName, NametagColor color) {
         try {
             LuckPerms lp = LuckPermsProvider.get();
             String groupName = teamGroupName(teamName);
 
-            lp.getGroupManager().createAndLoadGroup(groupName).thenAcceptAsync(group -> {
-                // Set the prefix: [TeamName]
-                String prefix = "&f[" + teamName + "] ";
-                PrefixNode prefixNode = PrefixNode.builder(prefix, TEAM_PREFIX_PRIORITY).build();
-                group.data().add(prefixNode);
+            return lp.getGroupManager().createAndLoadGroup(groupName).thenCompose(group ->
+                    lp.getGroupManager().modifyGroup(groupName, g -> {
+                        String prefix = color.getColorCode() + "[" + teamName + "] &r";
+                        PrefixNode prefixNode = PrefixNode.builder(prefix, TEAM_PREFIX_PRIORITY).build();
+                        g.data().add(prefixNode);
+                    })
+            ).thenRun(() ->
+                    logger.info("[Nametag] Created LuckPerms group '" + groupName + "' with prefix " + color.getColorCode() + "[" + teamName + "]")
+            );
+        } catch (IllegalStateException e) {
+            logger.warning("[Nametag] LuckPerms API not available — could not create team group for " + teamName);
+            return CompletableFuture.completedFuture(null);
+        }
+    }
 
-                lp.getGroupManager().saveGroup(group).thenRun(() ->
-                        logger.info("[Nametag] Created LuckPerms group '" + groupName + "' with prefix [" + teamName + "]")
+    /**
+     * Changes the prefix color of an existing team's LuckPerms group.
+     * Removes the old prefix node and adds a new one with the updated color.
+     */
+    public CompletableFuture<Void> setTeamColor(String teamName, NametagColor color) {
+        try {
+            LuckPerms lp = LuckPermsProvider.get();
+            String groupName = teamGroupName(teamName);
+
+            return lp.getGroupManager().modifyGroup(groupName, g -> {
+                // Remove all existing prefix nodes at our priority
+                g.data().clear(NodeType.PREFIX::matches);
+
+                // Add the new colored prefix
+                String prefix = color.getColorCode() + "[" + teamName + "] &r";
+                PrefixNode prefixNode = PrefixNode.builder(prefix, TEAM_PREFIX_PRIORITY).build();
+                g.data().add(prefixNode);
+            }).thenRun(() -> {
+                logger.info("[Nametag] Updated team '" + teamName + "' prefix color to " + color.name());
+                // Refresh nametags for all online players after a short delay
+                Bukkit.getScheduler().runTaskLater(
+                        Bukkit.getPluginManager().getPlugin("TeamsAndMore"),
+                        this::refreshAllNametags, 10L
                 );
             });
         } catch (IllegalStateException e) {
-            logger.warning("[Nametag] LuckPerms API not available — could not create team group for " + teamName);
+            logger.warning("[Nametag] LuckPerms API not available — could not change color for " + teamName);
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -77,26 +119,26 @@ public class NametagManager {
     /**
      * Adds a player to their team's LuckPerms group.
      */
-    public void onPlayerAddedToTeam(String teamName, String playerName) {
+    public CompletableFuture<Void> onPlayerAddedToTeam(String teamName, String playerName) {
         Player player = Bukkit.getPlayerExact(playerName);
-        if (player == null) return;
+        if (player == null) return CompletableFuture.completedFuture(null);
 
         try {
             LuckPerms lp = LuckPermsProvider.get();
             String groupName = teamGroupName(teamName);
 
-            lp.getUserManager().modifyUser(player.getUniqueId(), user -> {
+            return lp.getUserManager().modifyUser(player.getUniqueId(), user -> {
                 InheritanceNode node = InheritanceNode.builder(groupName).build();
                 user.data().add(node);
             }).thenRun(() -> {
-                // Refresh scoreboard nametag after LP data updates
                 Bukkit.getScheduler().runTaskLater(
                         Bukkit.getPluginManager().getPlugin("TeamsAndMore"),
-                        () -> applyNametag(player), 5L
+                        () -> applyNametag(player), 10L
                 );
             });
         } catch (IllegalStateException e) {
             logger.warning("[Nametag] LuckPerms API not available — could not add " + playerName + " to team group");
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -107,7 +149,6 @@ public class NametagManager {
         Player player = Bukkit.getPlayerExact(playerName);
         UUID uuid = player != null ? player.getUniqueId() : null;
 
-        // Try to get UUID from Bukkit's offline player if they're not online
         if (uuid == null) {
             uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
         }
@@ -116,14 +157,15 @@ public class NametagManager {
             LuckPerms lp = LuckPermsProvider.get();
             String groupName = teamGroupName(teamName);
 
+            final Player playerRef = player;
             lp.getUserManager().modifyUser(uuid, user -> {
                 InheritanceNode node = InheritanceNode.builder(groupName).build();
                 user.data().remove(node);
             }).thenRun(() -> {
-                if (player != null && player.isOnline()) {
+                if (playerRef != null && playerRef.isOnline()) {
                     Bukkit.getScheduler().runTaskLater(
                             Bukkit.getPluginManager().getPlugin("TeamsAndMore"),
-                            () -> applyNametag(player), 5L
+                            () -> applyNametag(playerRef), 10L
                     );
                 }
             });
@@ -149,11 +191,15 @@ public class NametagManager {
             if (prefix != null) {
                 Component prefixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(prefix);
                 team.prefix(prefixComponent);
+            } else {
+                team.prefix(Component.empty());
             }
 
             if (suffix != null) {
                 Component suffixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(suffix);
                 team.suffix(suffixComponent);
+            } else {
+                team.suffix(Component.empty());
             }
 
         } catch (IllegalStateException e) {
@@ -172,9 +218,8 @@ public class NametagManager {
 
     /**
      * Converts a team name to a valid LuckPerms group name.
-     * LuckPerms group names must be lowercase alphanumeric.
      */
     private String teamGroupName(String teamName) {
-        return "team-" + teamName.toLowerCase().replaceAll("[^a-z0-9]", "");
+        return "team-" + teamName.toLowerCase().replaceAll("[^a-z0-9-]", "");
     }
 }

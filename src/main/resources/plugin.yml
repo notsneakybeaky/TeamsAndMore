@@ -1,11 +1,12 @@
 name: TeamsAndMore
-version: 1.0.0
+version: 1.0.1
 main: main.io.github.itshaithamn.teamsandmore.Main
 api-version: 1.21
 
 softdepend:
   - ProtocolLib
   - DiscordSRV
+  - LuckPerms
 
 commands:
   team:

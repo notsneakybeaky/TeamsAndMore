@@ -160,7 +160,12 @@ public class Commands implements CommandExecutor {
     }
 
     private boolean handleTeamColor(Player player, String[] args) {
-        player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Team prefixes are managed through LuckPerms. Ask an admin to set your group's prefix."));
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§6§l[TeamsAndMore]§r Usage: /team color <color>"));
+            return true;
+        }
+
+        teamManager.setTeamColor(player, args[1]);
         return true;
     }
 

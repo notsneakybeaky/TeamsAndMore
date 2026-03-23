@@ -15,9 +15,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
@@ -43,7 +41,7 @@ public class Main extends JavaPlugin implements Listener {
         teamManager = new TeamManager(scoreboard, new TeamDatabaseManager(dataFolder));
         this.getCommand("team").setExecutor(new Commands(teamManager));
         this.getCommand("team").setTabCompleter(new TeamTabCompleter());
-        // ── Nametag coloring (uses Bukkit Team API, no extra dependencies) ──
+        // ── Nametag coloring (pulls prefix/suffix from LuckPerms) ──
         nametagManager = new NametagManager(scoreboard, getLogger());
         Bukkit.getPluginManager().registerEvents(new NametagListener(nametagManager), this);
         teamManager.setNametagManager(nametagManager);
@@ -66,12 +64,10 @@ public class Main extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        event.getPlayer().sendMessage(Component.text("Hello, " + event.getPlayer().getName() + "!"));
-    }
-
-    @EventHandler
-    public void preLogin(AsyncPlayerPreLoginEvent event) {
-        teamManager.preloadPlayer(event.getUniqueId(), event.getName());
+        Player player = event.getPlayer();
+        player.sendMessage(Component.text("Hello, " + player.getName() + "!"));
+        // Preload onto scoreboard team on the main thread
+        teamManager.preloadPlayer(player.getUniqueId(), player.getName());
     }
 
     @Override

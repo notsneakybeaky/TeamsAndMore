@@ -15,11 +15,12 @@ public class NametagListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event) {
+        // Delay to ensure LuckPerms has loaded the player's cached data
         event.getPlayer().getServer().getScheduler().runTaskLater(
                 event.getPlayer().getServer().getPluginManager()
                         .getPlugin("TeamsAndMore"),
                 () -> nametagManager.refreshAllNametags(),
-                5L
+                20L
         );
     }
 }

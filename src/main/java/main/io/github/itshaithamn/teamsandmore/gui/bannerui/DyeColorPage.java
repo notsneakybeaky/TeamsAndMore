@@ -37,13 +37,10 @@ public class DyeColorPage {
 
         for (DyeColor dyeColor : DYE_COLORS) {
             Material dyeMat = BannerEditorState.dyeColorToDyeMaterial(dyeColor);
-            String colorName = formatEnumName(dyeColor.name());
 
             GuiItem item = ItemBuilder.from(dyeMat)
-                    .name(Component.text(colorName, NamedTextColor.WHITE)
-                            .decoration(TextDecoration.ITALIC, false))
                     .lore(
-                            Component.text("Apply " + patternName + " in " + colorName, NamedTextColor.YELLOW)
+                            Component.text("Click to apply", NamedTextColor.YELLOW)
                                     .decoration(TextDecoration.ITALIC, false)
                     )
                     .asGuiItem(event -> {

@@ -164,10 +164,8 @@ public class PatternPage {
             ItemStack patternDisplay = buildPatternDisplay(patternType);
 
             GuiItem patternItem = ItemBuilder.from(patternDisplay)
-                    .name(Component.text(formatEnumName(patternType.toString()), NamedTextColor.WHITE)
-                            .decoration(TextDecoration.ITALIC, false))
                     .lore(
-                            Component.text("Click to add this pattern", NamedTextColor.YELLOW)
+                            Component.text("Click to apply", NamedTextColor.YELLOW)
                                     .decoration(TextDecoration.ITALIC, false)
                     )
                     .asGuiItem(event -> {

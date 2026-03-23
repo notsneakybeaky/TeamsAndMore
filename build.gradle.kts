@@ -31,6 +31,7 @@ dependencies {
     implementation("org.xerial:sqlite-jdbc:3.47.1.0")
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("com.discordsrv:discordsrv:1.28.0")
+    compileOnly("net.luckperms:api:5.5")
 }
 
 java {

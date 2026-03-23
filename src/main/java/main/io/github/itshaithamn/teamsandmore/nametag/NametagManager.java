@@ -179,7 +179,10 @@ public class NametagManager {
      */
     public void applyNametag(Player player) {
         Team team = scoreboard.getEntryTeam(player.getName());
-        if (team == null) return;
+        if (team == null) {
+            logger.info("[Nametag DEBUG] No scoreboard team found for " + player.getName());
+            return;
+        }
 
         try {
             LuckPerms lp = LuckPermsProvider.get();
@@ -188,15 +191,21 @@ public class NametagManager {
             String prefix = meta.getPrefix();
             String suffix = meta.getSuffix();
 
+            logger.info("[Nametag DEBUG] Player: " + player.getName()
+                    + " | Team: " + team.getName()
+                    + " | LP Prefix: " + prefix
+                    + " | LP Suffix: " + suffix);
+
             if (prefix != null) {
-                Component prefixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(prefix);
+                Component prefixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(prefix + " ");
                 team.prefix(prefixComponent);
+                logger.info("[Nametag DEBUG] Set team prefix for " + player.getName());
             } else {
                 team.prefix(Component.empty());
             }
 
             if (suffix != null) {
-                Component suffixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(suffix);
+                Component suffixComponent = LegacyComponentSerializer.legacyAmpersand().deserialize(" " + suffix);
                 team.suffix(suffixComponent);
             } else {
                 team.suffix(Component.empty());

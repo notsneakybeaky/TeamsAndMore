@@ -43,9 +43,19 @@ public class Main extends JavaPlugin implements Listener {
         this.getCommand("team").setTabCompleter(new TeamTabCompleter());
         // ── Nametag coloring (pulls prefix/suffix from LuckPerms) ──
         nametagManager = new NametagManager(scoreboard, getLogger());
-        Bukkit.getPluginManager().registerEvents(new NametagListener(nametagManager), this);
+        NametagListener nametagListener = new NametagListener(nametagManager);
+        Bukkit.getPluginManager().registerEvents(nametagListener, this);
         teamManager.setNametagManager(nametagManager);
-        Bukkit.getScheduler().runTaskLater(this, () -> nametagManager.refreshAllNametags(), 20L);
+
+        // Hook into LuckPerms events so nametags update when LP recalculates data
+        if (Bukkit.getPluginManager().isPluginEnabled("LuckPerms")) {
+            nametagListener.registerLuckPermsListener(this);
+            getLogger().info("LuckPerms found — hooked into UserDataRecalculateEvent.");
+        } else {
+            getLogger().info("LuckPerms not found — nametags will use delay-based refresh.");
+        }
+
+        Bukkit.getScheduler().runTaskLater(this, () -> nametagManager.refreshAllNametags(), 40L);
 
         // ── DiscordSRV sync (soft dependency) ──
         if (Bukkit.getPluginManager().isPluginEnabled("DiscordSRV")) {

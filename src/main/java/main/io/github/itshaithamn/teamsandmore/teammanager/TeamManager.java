@@ -312,13 +312,16 @@ public class TeamManager {
             }
             caching.flushNow();
 
-            // Notify nametag system — create the LP group, then add all members
+            // Notify nametag system — create the LP group first, THEN add all members after it's saved
             if (nametagManager != null) {
-                nametagManager.createTeamGroup(teamName);
-                nametagManager.onPlayerAddedToTeam(teamName, leader.getName());
-                for (Player member : members) {
-                    nametagManager.onPlayerAddedToTeam(teamName, member.getName());
-                }
+                final Player leaderRef = leader;
+                final Set<Player> membersRef = members;
+                nametagManager.createTeamGroup(teamName).thenRun(() -> {
+                    nametagManager.onPlayerAddedToTeam(teamName, leaderRef.getName());
+                    for (Player member : membersRef) {
+                        nametagManager.onPlayerAddedToTeam(teamName, member.getName());
+                    }
+                });
             }
 
             // Notify Discord system
